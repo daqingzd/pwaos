@@ -11,9 +11,10 @@ class PwaosSdkTestPackageConan(ConanFile):
     generators = "CMakeToolchain", "CMakeDeps", "VirtualRunEnv"
 
     def requirements(self):
-        # 显式 traits：pwaos_sdk 携带头文件+客户端库，消费者要编译链接。
-        # 不写的话，APP 型包的默认 traits 是 headers=False/libs=False，
-        # CMakeDeps 生成的目标将没有 include 目录和库。
+        # Explicit traits: pwaos_sdk ships the C ABI header + client library;
+        # consumers compile and link against them. Without this, application-
+        # typed packages get headers=False/libs=False defaults and CMakeDeps
+        # would generate a target without include dirs or libraries.
         self.requires(self.tested_reference_str, headers=True, libs=True, run=True)
 
     def layout(self):
@@ -26,12 +27,13 @@ class PwaosSdkTestPackageConan(ConanFile):
 
     def test(self):
         if can_run(self):
-            # Default: link/ABI smoke (no server needed). The full hello
-            # runtime flow runs when PWAOS_TEST_RUNTIME=1 is set; the packaged
-            # runtime dir is exported as PWAOS_RUNTIME_DIR by the package's
-            # runenv and reached through the "conanrun" environment.
-            # Extra client args (forwarded by the client to pwaos_server,
-            # e.g. --no-sandbox) come via PWAOS_TEST_ARGS.
+            # Link/ABI smoke by default. The full hello runtime flow (spawn
+            # pwaos_server) additionally runs when the environment has a
+            # display; extra client args are forwarded to the server
+            # (e.g. --no-sandbox on root/CI).
             bin_path = os.path.join(self.cpp.build.bindirs[0], "test_package")
             extra = os.environ.get("PWAOS_TEST_ARGS", "")
+            if hasattr(os, "getuid") and os.getuid() == 0:
+                # Chromium-based servers refuse to run as root without it.
+                extra = (extra + " --no-sandbox").strip()
             self.run((bin_path + " " + extra).strip(), env="conanrun")
