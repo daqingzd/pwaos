@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.15)
+project(test_package LANGUAGES C)
+
+find_package(pwaos_sdk REQUIRED CONFIG)
+
+add_executable(${PROJECT_NAME} test_package.c hello.c)
+target_link_libraries(${PROJECT_NAME} PRIVATE pwaos_sdk::pwaos_sdk)
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE winmm)
+endif()
