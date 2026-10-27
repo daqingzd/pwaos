@@ -1,0 +1,13 @@
+project(examples C)
+add_executable(hello main.c hello/hello.c)
+target_link_libraries(hello PRIVATE pwaos_runtime_api)
+if (WIN32)
+    target_link_libraries(hello PRIVATE winmm)
+endif()
+
+set(ALL_EXAMPLES hello)
+foreach(t IN LISTS ALL_EXAMPLES)
+    if(TARGET ${t})
+        _add_runtime_api_post_build(${t})
+    endif()
+endforeach()
