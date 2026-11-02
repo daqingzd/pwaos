@@ -5,7 +5,7 @@
 # integrity layer, and the tip commit is always resolved live from GitHub.
 repository: "https://github.com/daqingzd/pwaos.git"
 sources:
-  "0.2.a":
+  "0.2.a.0":
     Linux_x86_64:
       branch: "sdk-linux-x64-v0.2.a.0"
     Windows_x86:

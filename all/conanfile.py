@@ -7,15 +7,13 @@ from conan import ConanFile
 from conan.errors import ConanException, ConanInvalidConfiguration
 from conan.tools.files import copy
 
-required_conan_version = ">=2.0"
+required_conan_version = ">=1.50.0"  # openjdk pattern: conan.tools API + conandata.yml
 
 
 class PwaosSdkConan(ConanFile):
     name = "pwaos_sdk"
-    # Default version so plain `conan create recipes/pwaos/all` works.
-    # Overridable with --version=X (must match config.yml); note this
-    # diverges from the CCI convention (build service injects --version).
-    version = "0.2.a"
+    # No `version` attribute: CCI's build service injects the version via
+    # `--version=X` from config.yml (local flows must pass it too).
     description = (
         "pwaOS runtime client SDK: stable C ABI header, client import "
         "library (libpwaos_runtime_api), and the pwaos_server runtime bundle"
@@ -26,22 +24,16 @@ class PwaosSdkConan(ConanFile):
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://github.com/daqingzd/pwaos"
     topics = ("pwa", "runtime", "chromium", "webview", "pwaos", "browser")
-    package_type = "shared-library"
     settings = "os", "arch", "compiler", "build_type"
     # The SDK ships prebuilt binaries fetched from the upstream git branches
     # (same scheme as the openjdk recipe: build_policy missing + upload skip;
     # no compilation happens in this recipe).
     build_policy = "missing"
     upload_policy = "skip"
+    package_type = "shared-library"
 
-    options = {
-        # Bundle the pwaos_server runtime/ directory (~110 MB). Consumers who
-        # only compile against the ABI can disable it.
-        "with_runtime": [True, False],
-    }
-    default_options = {
-        "with_runtime": True,
-    }
+    options = {"with_runtime": [True, False]}
+    default_options = {"with_runtime": True}
 
     def package_id(self):
         # Prebuilt binaries: identical artifact regardless of the consumer's
@@ -50,8 +42,8 @@ class PwaosSdkConan(ConanFile):
         del self.info.settings.build_type
 
     def validate(self):
-        key = self._artifact_key
-        if key not in self.conan_data["sources"][self.version]:
+        # Branch availability: conandata.yml keys are "{os}_{arch}".
+        if self._artifact_key not in self.conan_data["sources"][self.version]:
             raise ConanInvalidConfiguration(
                 f"pwaos_sdk/{self.version} has no SDK branch for "
                 f"{self.settings.os}/{self.settings.arch}"
@@ -80,8 +72,7 @@ class PwaosSdkConan(ConanFile):
         # current tip on GitHub first, so every create picks up the newest
         # push (force update; no Conan download cache or release asset in
         # between). The per-os/arch branch name comes from conandata.yml.
-        key = self._artifact_key
-        entry = self.conan_data["sources"][self.version][key]
+        entry = self.conan_data["sources"][self.version][self._artifact_key]
         self._fetch_sdk_branch(entry["branch"])
 
     def _fetch_sdk_branch(self, branch):
@@ -131,11 +122,10 @@ class PwaosSdkConan(ConanFile):
         git("remote", "add", "origin", repo, cwd=dest, timeout=60)
         # Abort stalled transfers (bytes/s, seconds) instead of hanging.
         # -c key=value must precede the subcommand (git exits 129 otherwise).
-        fetch = ("-c", "http.lowSpeedLimit=1000",
-                 "-c", "http.lowSpeedTime=120",
-                 "fetch", "--depth", "1", "origin", commit)
-        self._git_retry(git, *fetch, cwd=dest, what="fetching SDK branch",
-                        timeout=3600)
+        self._git_retry(git, "-c", "http.lowSpeedLimit=1000",
+                        "-c", "http.lowSpeedTime=120",
+                        "fetch", "--depth", "1", "origin", commit,
+                        cwd=dest, what="fetching SDK branch", timeout=3600)
         # Checkout with the LFS smudge filter disabled: otherwise checkout
         # itself downloads the ~112 MB object inline (and can blow any sane
         # timeout). The explicit, retried `git lfs pull` below materializes
@@ -162,10 +152,12 @@ class PwaosSdkConan(ConanFile):
                 + ", ".join(p.split()[-1] for p in pointers))
 
     @staticmethod
-    def _git_retry(git_fn, *args, what, timeout, **kwargs):
+    def _git_retry(git_fn, *args, **kwargs):
         # 3 attempts with backoff: rides out GitHub's intermittent slow
         # phases; each attempt is safe to re-run (fetch/lfs pull are
         # idempotent against a partially populated object store).
+        what = kwargs.pop("what", "git operation")
+        timeout = kwargs.pop("timeout", None)
         last_error = None
         for attempt in range(3):
             try:
@@ -221,6 +213,9 @@ class PwaosSdkConan(ConanFile):
             self.cpp_info.set_property("pwaos:runtime_dir", runtime_dir)
             self.buildenv_info.define_path("PWAOS_RUNTIME_DIR", runtime_dir)
             self.runenv_info.define_path("PWAOS_RUNTIME_DIR", runtime_dir)
+            # TODO: remove `env_info` once the recipe is only compatible with
+            # Conan >= 2.0 (no-op mock on 2.x; required by 1.x legacy flows).
+            self.env_info.PWAOS_RUNTIME_DIR = runtime_dir
         else:
             # with_runtime=False: define_path would still bake the (missing)
             # package runtime path into the env; keep it unset instead.

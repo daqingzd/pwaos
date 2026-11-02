@@ -163,7 +163,7 @@ static int runtime_flow_body(void) {
     int outcome = 1;
     while (elapsed_seconds() <= 150) {
         pwaosEventDataBuffer buffer;
-        auto result = pwaosInstance_pollEvent(instance, &buffer);
+        pwaosResult result = pwaosInstance_pollEvent(instance, &buffer);
         if (PWAOS_RESULT_SUCCESS != result) {
             sleep_ms(10);
             continue;

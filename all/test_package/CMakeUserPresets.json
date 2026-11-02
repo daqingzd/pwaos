@@ -4,6 +4,7 @@
         "conan": {}
     },
     "include": [
+        "/workspace/iop/conan-center-index/recipes/pwaos_sdk/all/test_package/build/Release/generators/CMakePresets.json",
         "build/gcc-11-x86_64-gnu17-release/generators/CMakePresets.json"
     ]
 }
