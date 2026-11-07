@@ -1,5 +1,3 @@
-Please switch branch to find correct platform and CPU architecture.
-
 On windows: 
 1) Install Visual Studio 2019 or later and CMake.
 2) Generate the Visual Studio solution:
