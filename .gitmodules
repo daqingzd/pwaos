@@ -1,0 +1,5 @@
+[submodule "packages/runtime-client-api"]
+	path = packages/runtime-client-api
+	url = git@github.com:daqingzd/pwaos-node-addon.git
+	branch = main
+	update = checkout

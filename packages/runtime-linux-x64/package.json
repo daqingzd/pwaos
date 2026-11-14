@@ -1,0 +1,41 @@
+{
+  "name": "@pwaos.net/runtime-linux-x64",
+  "version": "0.2.1",
+  "description": "PwaOS Runtime binary for linux x64",
+  "license": "MIT",
+  "homepage": "https://www.pwaos.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daqingzd/pwaos.git#sdk-linux-x64-v0.2.1",
+    "directory": "packages/runtime-linux-x64"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "runtime",
+    "include",
+    "lib",
+    "LICENSE",
+    "README.md"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-platform-pkg.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/daqingzd/pwaos/issues"
+  },
+  "author": {
+    "name": "daqingzd",
+    "url": "https://github.com/daqingzd"
+  }
+}

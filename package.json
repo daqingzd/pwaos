@@ -1,0 +1,17 @@
+{
+  "name": "pwaos-npm-packages",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "node scripts/build-all.js",
+    "fetch-runtime": "node scripts/fetch-runtime.js",
+    "merge-stage": "node scripts/merge-stage.js",
+    "clean": "node scripts/clean.js",
+    "publish-all": "bash scripts/publish-all.sh",
+    "verify-before-publish": "bash scripts/verify-before-publish.sh"
+  },
+  "license": "MIT",
+  "version": "0.2.1"
+}

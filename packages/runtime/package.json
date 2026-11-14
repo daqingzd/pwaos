@@ -1,0 +1,34 @@
+{
+  "name": "@pwaos.net/runtime",
+  "version": "0.2.1",
+  "description": "PwaOS Runtime distribution package.",
+  "license": "MIT",
+  "files": [
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "optionalDependencies": {
+    "@pwaos.net/runtime-linux-x64": "0.2.1",
+    "@pwaos.net/runtime-win32-x86": "0.2.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://www.pwaos.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daqingzd/pwaos.git#npmjs",
+    "directory": "packages/runtime"
+  },
+  "bugs": {
+    "url": "https://github.com/daqingzd/pwaos/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": {
+    "name": "daqingzd",
+    "url": "https://github.com/daqingzd"
+  }
+}
