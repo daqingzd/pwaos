@@ -1,6 +1,6 @@
 {
   "name": "@pwaos.net/runtime-win32-x86",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "PwaOS Runtime binary for win32 x86 (32-bit)",
   "license": "MIT",
   "homepage": "https://www.pwaos.net",
