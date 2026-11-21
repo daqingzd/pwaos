@@ -1,0 +1,52 @@
+{
+  "name": "@pwaos/shell",
+  "version": "0.1.0",
+  "description": "PwaOS Shell - a terminal PWA that runs inside the PwaOS Runtime. xterm.js front-end, busybox-style builtins, fish-style prompt, bash-style history.",
+  "license": "MIT",
+  "author": {
+    "name": "daqingzd",
+    "url": "https://github.com/daqingzd"
+  },
+  "homepage": "https://www.pwaos.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daqingzd/pwaos.git",
+    "directory": "packages/shell"
+  },
+  "bugs": {
+    "url": "https://github.com/daqingzd/pwaos/issues"
+  },
+  "keywords": [
+    "pwaos",
+    "shell",
+    "terminal",
+    "console",
+    "pwa",
+    "xterm",
+    "runtime"
+  ],
+  "main": "main.js",
+  "bin": {
+    "pwaos-shell": "main.js"
+  },
+  "files": [
+    "main.js",
+    "lib",
+    "webapp",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@pwaos/runtime-client": "^0.2.1"
+  },
+  "scripts": {
+    "start": "node main.js",
+    "test": "node test/engine.test.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

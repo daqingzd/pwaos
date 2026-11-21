@@ -1,0 +1,47 @@
+{
+  "name": "@pwaos/browser",
+  "version": "0.1.0",
+  "description": "PwaOS Browser - runs the PwaOS Browser PWA (www.pwaos.net/webapps/browser) as an app inside the PwaOS Runtime.",
+  "license": "MIT",
+  "author": {
+    "name": "daqingzd",
+    "url": "https://github.com/daqingzd"
+  },
+  "homepage": "https://brower.pwaos.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daqingzd/browser.pwa.git#node",
+    "directory": "packages/browser"
+  },
+  "bugs": {
+    "url": "https://github.com/daqingzd/browser.pwa/issues"
+  },
+  "keywords": [
+    "pwaos",
+    "browser",
+    "pwa",
+    "runtime",
+    "webview"
+  ],
+  "main": "main.js",
+  "bin": {
+    "pwaos-browser": "main.js"
+  },
+  "files": [
+    "main.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@pwaos.net/runtime-client-api": "0.2.1"
+  },
+  "scripts": {
+    "start": "node main.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

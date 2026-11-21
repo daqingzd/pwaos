@@ -4,3 +4,12 @@ prebuilds/*.node
 *.tgz
 .clone/
 stage/
+
+# platform payloads (fetched by build-platform-pkg.js; shipped via npm, not git)
+packages/runtime-linux-x64/runtime/
+packages/runtime-linux-x64/include/
+packages/runtime-linux-x64/lib/
+packages/runtime-win32-x86/runtime/
+packages/runtime-win32-x86/include/
+packages/runtime-win32-x86/lib/
+node_modules/
