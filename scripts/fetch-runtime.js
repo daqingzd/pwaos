@@ -56,6 +56,10 @@ const PLATFORMS = {
   // npm cpu for 32-bit x86 Windows is "ia32"; the upstream SDK branch is
   // named win-x86 (32-bit). The runtime runs on 64-bit Windows via WOW64.
   'win32-x86': { sdkOs: 'win', sdkArch: 'x86' },
+  // The win32-x64 package carries the same 32-bit upstream payload (x64
+  // Windows runs it via WOW64): same SDK branch, shared clone dir, staged
+  // under its own platform key.
+  'win32-x64': { sdkOs: 'win', sdkArch: 'x86', cloneAs: 'win32-x86' },
   // linux-arm64 and darwin are not supported yet: upstream publishes no
   // sdk-linux-arm64-* / sdk-darwin-* branches
 };
@@ -363,7 +367,7 @@ function main() {
   //    --resume reuses an existing clone (partially downloaded LFS objects
   //    survive) instead of wiping it; the commit is still re-verified against
   //    the live-resolved tip below.
-  const cloneDir = path.join(opts.out, '.clone', platform);
+  const cloneDir = path.join(opts.out, '.clone', meta.cloneAs || platform);
   fetchCommit(cloneDir, commit, { resume: !!opts.resume });
 
   // 3. LFS objects (the runtime executable).

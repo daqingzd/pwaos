@@ -28,6 +28,7 @@ const path = require('path');
 const PLATFORM_PACKAGES = new Set([
   'runtime-linux-x64',
   'runtime-win32-x86',
+  'runtime-win32-x64',
   // linux-arm64 and darwin are not supported yet (no matching upstream branches)
 ]);
 

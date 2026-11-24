@@ -1,0 +1,38 @@
+{
+  "name": "@pwaos.net/runtime-win32-x64",
+  "version": "0.2.4",
+  "description": "PwaOS Runtime binary for win32 x64 (upstream win-x86 payload, runs via WOW64)",
+  "license": "MIT",
+  "homepage": "https://www.pwaos.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daqingzd/pwaos.git#sdk-win-x86-v0.2.1",
+    "directory": "packages/runtime-win32-x64"
+  },
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "runtime",
+    "include",
+    "lib",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-platform-pkg.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/daqingzd/pwaos/issues"
+  },
+  "author": {
+    "name": "daqingzd",
+    "url": "https://github.com/daqingzd"
+  }
+}

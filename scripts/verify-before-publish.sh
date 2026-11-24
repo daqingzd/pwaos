@@ -40,19 +40,23 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Map npm platform/arch -> the tarball name built by npm pack. On win32 the
-# upstream runtime is 32-bit (x86/ia32): the win32-x86 package also serves
-# win32-x64 hosts via WOW64, so both map to it.
+# upstream runtime is 32-bit: the win32-x64 package carries the same x86
+# payload (serving x64 hosts via WOW64); win32-x86 covers ia32 hosts.
 case "$(node -p "process.platform + '-' + process.arch")" in
-  linux-x64)   PLATFORM_PKG="pwaos.net-runtime-linux-x64" ;;
-  win32-x64|win32-x86) PLATFORM_PKG="pwaos.net-runtime-win32-x86" ;;
+  linux-x64)   PLATFORM_PKG="pwaos.net-runtime-linux-x64";   PLATFORM_DIR="runtime-linux-x64" ;;
+  win32-x64)   PLATFORM_PKG="pwaos.net-runtime-win32-x64";   PLATFORM_DIR="runtime-win32-x64" ;;
+  win32-x86)   PLATFORM_PKG="pwaos.net-runtime-win32-x86";   PLATFORM_DIR="runtime-win32-x86" ;;
   *) echo "verify: unsupported platform $(node -p "process.platform + '-' + process.arch")" >&2; exit 1 ;;
 esac
 
 RUNTIME_VERSION="$(node -p "require('$ROOT/packages/runtime/package.json').version")"
 CLIENT_VERSION="$(node -p "require('$ROOT/packages/runtime-client-api/package.json').version")"
+# Platform packages version independently of the meta package (decoupled
+# ranges): each tarball is named after its OWN package version.
+PLATFORM_VERSION="$(node -p "require('$ROOT/packages/$PLATFORM_DIR/package.json').version")"
 
 ALL_PACKAGES=(
-  runtime-linux-x64 runtime-win32-x86 runtime runtime-client-api
+  runtime-linux-x64 runtime-win32-x86 runtime-win32-x64 runtime runtime-client-api
 )
 
 fail() { echo "❌ $*" >&2; exit 1; }
@@ -96,7 +100,7 @@ pass "@pwaos.net/runtime tarball has no binaries and no subpackage dirs"
 
 # 3b. The current platform's tarball must contain exactly its binary
 #     (plus metadata), and nothing else.
-platform_tar="$TARBALL_DIR/$PLATFORM_PKG-$RUNTIME_VERSION.tgz"
+platform_tar="$TARBALL_DIR/$PLATFORM_PKG-$PLATFORM_VERSION.tgz"
 platform_files="$(tar -tzf "$platform_tar")"
 echo "$platform_files"
 if ! echo "$platform_files" | grep -qE 'runtime/pwaos_server(\.exe)?$'; then
@@ -104,6 +108,11 @@ if ! echo "$platform_files" | grep -qE 'runtime/pwaos_server(\.exe)?$'; then
 fi
 if echo "$platform_files" | grep -qE 'src/|node_modules/|test|\.tgz$'; then
   fail "$PLATFORM_PKG tarball contains unexpected files"
+fi
+# Server-run pollution (pwaos_server.log + runtime/locales/) must never ship:
+# these appear when the unit suite runs against the monorepo-linked package.
+if echo "$platform_files" | grep -qE 'pwaos_server\.log|locales/'; then
+  fail "$PLATFORM_PKG tarball contains server-run pollution (pwaos_server.log / locales/)"
 fi
 pass "$PLATFORM_PKG tarball contains only its binary + metadata"
 
@@ -129,7 +138,7 @@ npm init -y > /dev/null
 # filtering is exactly what we verify afterwards.
 # --offline: every dependency is satisfied by the already-installed tarballs;
 # without it npm tries the registry for metadata and hangs on a network-restricted host.
-npm install --offline --no-audit --no-fund "$TARBALL_DIR/$PLATFORM_PKG-$RUNTIME_VERSION.tgz" > /dev/null
+npm install --offline --no-audit --no-fund "$TARBALL_DIR/$PLATFORM_PKG-$PLATFORM_VERSION.tgz" > /dev/null
 npm install --offline --no-audit --no-fund "$runtime_tar" > /dev/null
 npm install --offline --no-audit --no-fund "$TARBALL_DIR/pwaos.net-runtime-client-api-$CLIENT_VERSION.tgz" > /dev/null
 pass "tarballs installed into the isolated consumer"
@@ -143,17 +152,40 @@ const path = require('path');
 const fs = require('fs');
 
 // 1. The platform subpackage's runtime directory exists (with the server).
-const pkg = `@pwaos.net/runtime-${process.platform}-${process.arch}`;
-const pkgJson = require.resolve(`${pkg}/package.json`);
+//    Candidate order mirrors the client resolver: strict platform-arch name
+//    first; on win32 the payload-carrying win32-x86 package aliases.
+const candidates = process.platform === 'win32'
+  ? (process.arch === 'ia32'
+      ? ['@pwaos.net/runtime-win32-x86']
+      : [`@pwaos.net/runtime-win32-${process.arch}`, '@pwaos.net/runtime-win32-x86'])
+  : [`@pwaos.net/runtime-${process.platform}-${process.arch}`];
 const serverName = process.platform === 'win32' ? 'pwaos_server.exe' : 'pwaos_server';
-const runtimeDir = path.join(path.dirname(pkgJson), 'runtime');
-if (!fs.existsSync(path.join(runtimeDir, serverName))) {
-  throw new Error(`Runtime server not found at ${runtimeDir}/${serverName}`);
+let runtimeDir = null;
+let resolvedPkg = null;
+let pkgJson = null;
+for (const pkg of candidates) {
+  try {
+    pkgJson = require.resolve(`${pkg}/package.json`);
+  } catch (_) { continue; }
+  const dir = path.join(path.dirname(pkgJson), 'runtime');
+  if (fs.existsSync(path.join(dir, serverName))) {
+    runtimeDir = dir;
+    resolvedPkg = pkg;
+    break;
+  }
 }
-console.log('✅ Runtime directory found:', runtimeDir);
+if (!runtimeDir) {
+  throw new Error(`Runtime server not found for candidates: ${candidates.join(', ')}`);
+}
+console.log(`✅ Runtime directory found (${resolvedPkg}):`, runtimeDir);
 
 // 2. The package's export surface IS the addon - no extra classes/functions.
-const native = require('@pwaos.net/runtime-client-api/build/Release/pwaos_addon.node');
+//    The exports map does not expose the build subpath, so load the addon by
+//    absolute path - this hits the same require-cache entry runtime.cjs used,
+//    keeping the identity check below meaningful.
+const native = require(path.join(
+    path.dirname(require.resolve('@pwaos.net/runtime-client-api/package.json')),
+    'build', 'Release', 'pwaos_addon.node'));
 if (wmod !== native) throw new Error('module.exports is not the addon itself');
 if (typeof wmod.Instance !== 'function' || typeof wmod.App !== 'function') {
   throw new Error('native Instance/App classes not exposed');

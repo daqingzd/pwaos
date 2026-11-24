@@ -1,6 +1,6 @@
 {
   "name": "@pwaos.net/runtime",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "PwaOS Runtime distribution package.",
   "license": "MIT",
   "files": [
@@ -9,8 +9,9 @@
     "LICENSE"
   ],
   "optionalDependencies": {
-    "@pwaos.net/runtime-linux-x64": "0.2.3",
-    "@pwaos.net/runtime-win32-x86": "0.2.3"
+    "@pwaos.net/runtime-linux-x64": "^0.2.1",
+    "@pwaos.net/runtime-win32-x64": "^0.2.1",
+    "@pwaos.net/runtime-win32-x86": "^0.2.1"
   },
   "publishConfig": {
     "access": "public"

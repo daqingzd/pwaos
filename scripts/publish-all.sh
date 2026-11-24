@@ -30,6 +30,7 @@ done
 PLATFORMS=(
   runtime-linux-x64
   runtime-win32-x86
+  runtime-win32-x64
 )
 
 publish() {

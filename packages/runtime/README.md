@@ -45,14 +45,14 @@ automatically.
 | OS      | Architecture | npm `cpu` | Package                        |
 | ------- | ------------ | --------- | ------------------------------ |
 | Linux   | x64          | `x64`     | `@pwaos.net/runtime-linux-x64` |
+| Windows | x64          | `x64`     | `@pwaos.net/runtime-win32-x64` |
 | Windows | x86 (32-bit) | `ia32`    | `@pwaos.net/runtime-win32-x86` |
 
-The Windows upstream runtime is 32-bit, so its npm `cpu` field is `ia32`
-(npm's name for x86 32-bit) — not `x86`. Consequently, on 64-bit Windows
-(`win32-x64`) npm will not auto-install it: run
-`npm install @pwaos.net/runtime-win32-x86` explicitly; the 32-bit runtime
-runs on 64-bit Windows via WOW64, and `@pwaos.net/runtime-client-api`
-detects and uses it automatically.
+The Windows upstream runtime is currently 32-bit (x86). On 64-bit Windows
+the `win32-x64` package — which carries that same 32-bit payload, running
+via WOW64 — is installed automatically through npm's `os`/`cpu` filtering.
+On 32-bit Windows the `win32-x86` package (npm `cpu: ia32`) is installed
+automatically as well.
 
 If your platform is not listed, `@pwaos.net/runtime-client-api` will not be
 able to load the Runtime. Request a distribution for other platforms from
@@ -77,10 +77,12 @@ daqingzd@pwaos.net.
 The package exposes no JavaScript API; `@pwaos.net/runtime-client-api` is
 the layer that locates and sets up the runtime for you.
 
-The version of `@pwaos.net/runtime` is kept in strict sync with the PwaOS
-Runtime version, and all platform subpackages are exact-pinned (no `^`) for
-ABI consistency; `@pwaos.net/runtime-client-api` declares a compatible
-Runtime version range.
+The version of `@pwaos.net/runtime` tracks the PwaOS Runtime release train
+(0.2.x). Platform subpackages are declared with caret ranges (`^0.2.1`), so
+npm installs the newest published 0.2.x of each platform package — a platform
+payload can be updated or republished without forcing a new meta-package
+release. `@pwaos.net/runtime-client-api` likewise declares a caret range on
+this package.
 
 ## License
 
