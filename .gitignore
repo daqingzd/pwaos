@@ -6,13 +6,14 @@ prebuilds/*.node
 stage/
 
 # platform payloads (fetched by build-platform-pkg.js; shipped via npm, not git)
-packages/runtime-linux-x64/runtime/
-packages/runtime-linux-x64/include/
-packages/runtime-linux-x64/lib/
-packages/runtime-win32-x86/runtime/
-packages/runtime-win32-x86/include/
-packages/runtime-win32-x86/lib/
-packages/runtime-win32-x64/runtime/
-packages/runtime-win32-x64/include/
-packages/runtime-win32-x64/lib/
+# nested inside packages/runtime/ (2026-11-27)
+packages/runtime/runtime-linux-x64/runtime/
+packages/runtime/runtime-linux-x64/include/
+packages/runtime/runtime-linux-x64/lib/
+packages/runtime/runtime-win32-x86/runtime/
+packages/runtime/runtime-win32-x86/include/
+packages/runtime/runtime-win32-x86/lib/
+packages/runtime/runtime-win32-x64/runtime/
+packages/runtime/runtime-win32-x64/include/
+packages/runtime/runtime-win32-x64/lib/
 node_modules/

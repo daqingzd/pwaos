@@ -36,6 +36,10 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const PKGS_DIR = path.join(ROOT, 'packages');
+// Platform packages live NESTED inside the meta package dir
+// packages/runtime/runtime-<platform>-<arch>/ (2026-11-27); everything
+// else is a direct child of packages/.
+const NESTED_PLATFORMS = 'runtime';
 
 function parseArgs(argv) {
   const opts = { targets: [], force: false, list: false };
@@ -57,52 +61,66 @@ function parseArgs(argv) {
   return opts;
 }
 
-/** All workspace packages: { dir, name, build } (build = script text). */
+/** All packages: { dir (relative to packages/), name, build, pkgDir }. */
 function enumeratePackages() {
   const out = [];
-  for (const entry of fs.readdirSync(PKGS_DIR, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const manifestPath = path.join(PKGS_DIR, entry.name, 'package.json');
-    if (!fs.existsSync(manifestPath)) continue;
-    let manifest;
-    try {
-      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    } catch (err) {
-      console.error(`build-all: cannot parse ${manifestPath}: ${err.message}`);
-      process.exit(1);
+  const scanDir = (relBase) => {
+    const absBase = path.join(PKGS_DIR, relBase);
+    for (const entry of fs.readdirSync(absBase, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
+      const manifestPath = path.join(absBase, entry.name, 'package.json');
+      if (!fs.existsSync(manifestPath)) continue;
+      let manifest;
+      try {
+        manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      } catch (err) {
+        console.error(`build-all: cannot parse ${manifestPath}: ${err.message}`);
+        process.exit(1);
+      }
+      out.push({
+        dir: rel,
+        name: manifest.name || entry.name,
+        build: manifest.scripts && manifest.scripts.build || '',
+      });
     }
-    out.push({
-      dir: entry.name,
-      name: manifest.name || entry.name,
-      build: manifest.scripts && manifest.scripts.build || '',
-    });
-  }
-  // Build order: platform packages, then everything else (client), stable.
-  const rank = (p) => /^runtime-(linux|win|darwin)/.test(p.dir) ? 0 : 1;
+  };
+  scanDir('');
+  scanDir(NESTED_PLATFORMS);
+  // Build order: platform packages (rank by dir basename), then the rest.
+  const base = (p) => p.dir.split('/').pop();
+  const rank = (p) => /^runtime-(linux|win|darwin)/.test(base(p)) ? 0 : 1;
   out.sort((a, b) => rank(a) - rank(b) || a.dir.localeCompare(b.dir));
   return out;
 }
 
+/** Absolute package dir from the packages/-relative dir. */
+function pkgAbs(pkg) {
+  return path.join(PKGS_DIR, pkg.dir);
+}
+
 /** True when the platform package already carries its fetched payload. */
 function payloadPresent(pkg) {
-  const server = pkg.dir.startsWith('runtime-win32')
+  const base = pkg.dir.split('/').pop();
+  const server = base.startsWith('runtime-win32')
     ? 'pwaos_server.exe' : 'pwaos_server';
-  return fs.existsSync(path.join(PKGS_DIR, pkg.dir, 'runtime', server));
+  return fs.existsSync(path.join(pkgAbs(pkg), 'runtime', server));
 }
 
 /** True when the native addon binary already exists. */
 function addonBuilt(pkg) {
-  return fs.existsSync(path.join(PKGS_DIR, pkg.dir, 'build', 'Release',
+  return fs.existsSync(path.join(pkgAbs(pkg), 'build', 'Release',
     'pwaos_addon.node'));
 }
 
 function buildStatus(pkg) {
   if (!pkg.build) return 'no build step';
-  if (/^runtime-(linux|win|darwin)/.test(pkg.dir)) {
+  const base = pkg.dir.split('/').pop();
+  if (/^runtime-(linux|win|darwin)/.test(base)) {
     return payloadPresent(pkg) ? 'payload present (skip; --force refetches)'
       : 'fetch + merge needed';
   }
-  if (pkg.dir === 'runtime-client-api') {
+  if (base === 'runtime-client-api') {
     return addonBuilt(pkg) ? 'addon built (rebuild only on --force or source change)'
       : 'node-gyp needed (uses the platform package payload)';
   }
@@ -135,6 +153,7 @@ function resolveTargets(tokens, packages) {
 function runPlatformBuild(pkg, force) {
   const args = [path.join('scripts', 'build-platform-pkg.js')];
   if (force) args.push('--force');
+  const base = pkg.dir.split('/').pop();
   const res = spawnSync('node', args, {
     stdio: 'inherit',
     cwd: ROOT,
@@ -142,8 +161,8 @@ function runPlatformBuild(pkg, force) {
     // and would win over PKG_NAME inside build-platform-pkg.js - override
     // it with the actual target so the script resolves the right package.
     env: Object.assign({}, process.env, {
-      PKG_NAME: pkg.dir,
-      npm_package_name: `@pwaos.net/${pkg.dir}`,
+      PKG_NAME: base,
+      npm_package_name: `@pwaos.net/${base}`,
     }),
   });
   return res.status || 0;
@@ -155,7 +174,7 @@ function runGenericBuild(pkg) {
   // effect here: node-gyp rebuild always recompiles.
   const res = spawnSync('npm', ['run', 'build'], {
     stdio: 'inherit',
-    cwd: path.join(PKGS_DIR, pkg.dir),
+    cwd: pkgAbs(pkg),
     env: Object.assign({}, process.env),
     shell: process.platform === 'win32',
   });
@@ -184,8 +203,9 @@ function main() {
 
   const failed = [];
   for (const pkg of targets) {
+    const base = pkg.dir.split('/').pop();
     console.log(`\n== build-all: ${pkg.dir} ==`);
-    const code = /^runtime-(linux|win|darwin)/.test(pkg.dir)
+    const code = /^runtime-(linux|win|darwin)/.test(base)
       ? runPlatformBuild(pkg, opts.force)
       : runGenericBuild(pkg);
     if (code !== 0) {

@@ -32,6 +32,13 @@ const PLATFORM_PACKAGES = new Set([
   // linux-arm64 and darwin are not supported yet (no matching upstream branches)
 ]);
 
+// Platform packages are NESTED inside packages/runtime/ (2026-11-27).
+function pkgDirFor(root, name) {
+  const nested = path.join(root, 'runtime', name);
+  if (fs.existsSync(path.join(nested, 'package.json'))) return nested;
+  return path.join(root, name);
+}
+
 function parseArgs(argv) {
   const opts = { root: path.resolve(__dirname, '..', 'packages'), all: false };
   for (let i = 0; i < argv.length; i++) {
@@ -76,7 +83,7 @@ function main() {
       throw new Error(`unknown platform '${platform}'`);
     }
     const staged = path.join(opts.stage, platform);
-    const pkgDir = path.join(opts.root, `runtime-${platform}`);
+    const pkgDir = pkgDirFor(opts.root, `runtime-${platform}`);
     if (!fs.existsSync(staged)) {
       throw new Error(`no staged tree at ${staged} - run fetch-runtime.js first`);
     }

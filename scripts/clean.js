@@ -142,10 +142,18 @@ function collectTargets(opts) {
   const targets = [];
   const add = (label, p) => targets.push({ label, path: p });
   const pkg = (...seg) => path.join(ROOT, 'packages', ...seg);
-  const platformPkgs = fs.readdirSync(pkg(), { withFileTypes: true })
-    .filter((e) => e.isDirectory() && e.name.startsWith('runtime-') &&
-      e.name !== 'runtime-client-api' && e.name !== 'runtime')
-    .map((e) => e.name);
+  // Platform packages are NESTED inside packages/runtime/ (2026-11-27);
+  // a legacy packages/<name> layout is still scanned for compatibility.
+  const platformPkgs = [];
+  for (const base of ['runtime', '']) {
+    for (const e of fs.readdirSync(pkg(base), { withFileTypes: true })) {
+      if (!e.isDirectory() || !e.name.startsWith('runtime-')) continue;
+      if (e.name === 'runtime-client-api') continue;
+      // 'runtime' itself is the meta package, not a platform pkg.
+      if (e.name === 'runtime') continue;
+      platformPkgs.push(base ? `${base}/${e.name}` : e.name);
+    }
+  }
 
   // 1. Downloaded SDK: fetch staging tree (stage/<p>/ + stage/.clone/<p>/).
   add('fetch staging + LFS clone cache (stage/)', path.join(ROOT, 'stage'));

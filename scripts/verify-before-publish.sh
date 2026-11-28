@@ -42,18 +42,20 @@ done
 # Map npm platform/arch -> the tarball name built by npm pack. On win32 the
 # upstream runtime is 32-bit: the win32-x64 package carries the same x86
 # payload (serving x64 hosts via WOW64); win32-x86 covers ia32 hosts.
+# Platform packages are NESTED inside packages/runtime/ (2026-11-27).
 case "$(node -p "process.platform + '-' + process.arch")" in
   linux-x64)   PLATFORM_PKG="pwaos.net-runtime-linux-x64";   PLATFORM_DIR="runtime-linux-x64" ;;
   win32-x64)   PLATFORM_PKG="pwaos.net-runtime-win32-x64";   PLATFORM_DIR="runtime-win32-x64" ;;
   win32-x86)   PLATFORM_PKG="pwaos.net-runtime-win32-x86";   PLATFORM_DIR="runtime-win32-x86" ;;
   *) echo "verify: unsupported platform $(node -p "process.platform + '-' + process.arch")" >&2; exit 1 ;;
 esac
+PLATFORM_DIR="$ROOT/packages/runtime/$PLATFORM_DIR"
 
 RUNTIME_VERSION="$(node -p "require('$ROOT/packages/runtime/package.json').version")"
 CLIENT_VERSION="$(node -p "require('$ROOT/packages/runtime-client-api/package.json').version")"
 # Platform packages version independently of the meta package (decoupled
 # ranges): each tarball is named after its OWN package version.
-PLATFORM_VERSION="$(node -p "require('$ROOT/packages/$PLATFORM_DIR/package.json').version")"
+PLATFORM_VERSION="$(node -p "require('$PLATFORM_DIR/package.json').version")"
 
 ALL_PACKAGES=(
   runtime-linux-x64 runtime-win32-x86 runtime-win32-x64 runtime runtime-client-api
@@ -71,14 +73,20 @@ mkdir -p "$TARBALL_DIR" "$CONSUMER_DIR"
 echo "==> Step 1: npm pack --dry-run per package (what would be published?)"
 for pkg in "${ALL_PACKAGES[@]}"; do
   echo "--- $pkg ---"
-  (cd "$ROOT/packages/$pkg" && npm pack --dry-run) > /dev/null
+  pkgdir="$ROOT/packages/$pkg"
+  [[ -f "$ROOT/packages/runtime/$pkg/package.json" ]] && \
+    pkgdir="$ROOT/packages/runtime/$pkg"
+  (cd "$pkgdir" && npm pack --dry-run) > /dev/null
 done
 pass "all ${#ALL_PACKAGES[@]} packages pack cleanly"
 
 # ----------------------------------------------------------------------------
 echo "==> Step 2: generate all tarballs into $TARBALL_DIR"
 for pkg in "${ALL_PACKAGES[@]}"; do
-  (cd "$ROOT/packages/$pkg" && npm pack --pack-destination "$TARBALL_DIR" > /dev/null)
+  pkgdir="$ROOT/packages/$pkg"
+  [[ -f "$ROOT/packages/runtime/$pkg/package.json" ]] && \
+    pkgdir="$ROOT/packages/runtime/$pkg"
+  (cd "$pkgdir" && npm pack --pack-destination "$TARBALL_DIR" > /dev/null)
 done
 ls -la "$TARBALL_DIR"
 

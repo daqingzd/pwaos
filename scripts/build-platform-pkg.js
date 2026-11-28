@@ -26,7 +26,12 @@ const ROOT = path.resolve(__dirname, '..');
 // ("@pwaos.net/runtime-linux-x64"); PKG_NAME env is the manual override.
 const PKG_NAME = (process.env.npm_package_name || '')
   .replace(/^@pwaos\.net\//, '') || process.env.PKG_NAME || '';
-const PKG_DIR = path.resolve(ROOT, 'packages', PKG_NAME);
+// The platform packages are NESTED inside packages/runtime/ (2026-11-27):
+// packages/runtime/<name> (with packages/<name> as a legacy fallback).
+let PKG_DIR = path.resolve(ROOT, 'packages', 'runtime', PKG_NAME);
+if (!fs.existsSync(path.join(PKG_DIR, 'package.json'))) {
+  PKG_DIR = path.resolve(ROOT, 'packages', PKG_NAME);
+}
 if (!PKG_DIR.startsWith(path.resolve(ROOT, 'packages') + path.sep) ||
     !fs.existsSync(path.join(PKG_DIR, 'package.json'))) {
   console.error('build-platform-pkg: run via `npm run build` inside a ' +
